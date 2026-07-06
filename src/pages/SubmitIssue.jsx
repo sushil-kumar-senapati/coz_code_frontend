@@ -1,14 +1,17 @@
 import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { pinLookup, submitIssue } from '../api/client';
-import { TextT, Microphone, Image, MapPin, CheckCircle, PaperPlaneTilt, Stop, UploadSimple } from '@phosphor-icons/react';
+import { pinLookup, getConstituencies, submitIssue } from '../api/client';
+import { TextT, Microphone, Image, MapPin, CheckCircle, PaperPlaneTilt, Stop, UploadSimple, CaretDown } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function SubmitIssue() {
   const { t } = useTranslation();
   const [pinCode, setPinCode] = useState('');
   const [location, setLocation] = useState(null);
+  const [constituencies, setConstituencies] = useState([]);
+  const [selectedConstituency, setSelectedConstituency] = useState('');
   const [pinLoading, setPinLoading] = useState(false);
+  const [constLoading, setConstLoading] = useState(false);
   const [inputType, setInputType] = useState('text');
   const [text, setText] = useState('');
   const [recording, setRecording] = useState(false);
@@ -27,21 +30,36 @@ export default function SubmitIssue() {
   const handlePinChange = async (val) => {
     setPinCode(val);
     setLocation(null);
+    setConstituencies([]);
+    setSelectedConstituency('');
     if (val.length === 6) {
       setPinLoading(true);
-      try { setLocation(await pinLookup(val)); } catch { /* ignore */ }
+      try {
+        const data = await pinLookup(val);
+        setLocation(data);
+        if (data.state) {
+          setConstLoading(true);
+          try {
+            const constList = await getConstituencies(data.state);
+            setConstituencies(constList);
+          } catch { setConstituencies([]); }
+          setConstLoading(false);
+        }
+      } catch { setLocation(null); }
       setPinLoading(false);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!selectedConstituency) { setError('Please select the MP constituency for this problem location'); return; }
     setError('');
     setLoading(true);
     try {
       const result = await submitIssue({
         submission_pin_code: pinCode,
         input_type: inputType,
+        sub_constituency: selectedConstituency,
         raw_text: text || undefined,
         raw_language: 'en',
         audio_file: audioFile || undefined,
@@ -92,7 +110,6 @@ export default function SubmitIssue() {
                 [t('auth.city'), location.city],
                 [t('auth.district'), location.district],
                 [t('auth.state'), location.state],
-                [t('auth.constituency'), location.mp_constituency],
               ].map(([k, v]) => (
                 <div key={k} className="location-field">
                   <span className="location-field-label">{k}</span>
@@ -102,6 +119,22 @@ export default function SubmitIssue() {
             </div>
           )}
         </div>
+
+        {/* Constituency Dropdown */}
+        {location && (
+          <div className="form-group">
+            <label className="form-label"><CaretDown size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} /> {t('auth.constituency')} *</label>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 8 }}>
+              Select the MP constituency where this problem is located.
+            </p>
+            {constLoading ? <div className="form-hint">{t('common.loading')}</div> : (
+              <select className="form-input" value={selectedConstituency} onChange={(e) => setSelectedConstituency(e.target.value)} required style={{ cursor: 'pointer' }}>
+                <option value="">— Select MP Constituency —</option>
+                {constituencies.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            )}
+          </div>
+        )}
 
         <div className="form-group">
           <label className="form-label">{t('submit.input_type')}</label>

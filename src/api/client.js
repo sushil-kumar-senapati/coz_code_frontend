@@ -33,10 +33,14 @@ export async function pinLookup(pinCode) {
   return request(`/auth/pin-lookup/${pinCode}`);
 }
 
-export async function registerUser({ phone, password, name, home_pin_code }) {
+export async function getConstituencies(state) {
+  return request(`/auth/constituencies?state=${encodeURIComponent(state)}`);
+}
+
+export async function registerUser({ phone, password, name, home_pin_code, home_constituency }) {
   return request('/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ phone, password, name, home_pin_code }),
+    body: JSON.stringify({ phone, password, name, home_pin_code, home_constituency }),
   });
 }
 
@@ -53,10 +57,11 @@ export async function getMe() {
 
 // ── Submissions ─────────────────────────────────────────────────────────────
 
-export async function submitIssue({ submission_pin_code, input_type, raw_text, raw_language, audio_file, image_file }) {
+export async function submitIssue({ submission_pin_code, input_type, sub_constituency, raw_text, raw_language, audio_file, image_file }) {
   const formData = new FormData();
   formData.append('submission_pin_code', submission_pin_code);
   formData.append('input_type', input_type);
+  if (sub_constituency) formData.append('sub_constituency', sub_constituency);
   if (raw_text) formData.append('raw_text', raw_text);
   if (raw_language) formData.append('raw_language', raw_language);
   if (audio_file) formData.append('audio_file', audio_file);

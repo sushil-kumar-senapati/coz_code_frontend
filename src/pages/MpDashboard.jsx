@@ -20,6 +20,21 @@ const SECTOR_SHORT = {
   RAILWAYS: 'Railways', DISASTER_RELIEF: 'Disaster',
 };
 
+function ExpandableText({ text, maxLen = 80 }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!text) return null;
+  if (text.length <= maxLen) return <span>{text}</span>;
+  return (
+    <span>
+      {expanded ? text : text.slice(0, maxLen)}
+      <button onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+        style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem', marginLeft: 4, padding: 0 }}>
+        {expanded ? '▲ Show less' : '▼ View more'}
+      </button>
+    </span>
+  );
+}
+
 export default function MpDashboard() {
   const { t } = useTranslation();
   const [dashboard, setDashboard] = useState(null);
@@ -32,6 +47,7 @@ export default function MpDashboard() {
   const [deciding, setDeciding] = useState(false);
   const [viewCluster, setViewCluster] = useState(null);
   const [viewLoading, setViewLoading] = useState(false);
+  const [viewLang, setViewLang] = useState('english');
   const [activeTab, setActiveTab] = useState('overview');
   const [filterCategory, setFilterCategory] = useState('');
 
@@ -265,9 +281,9 @@ export default function MpDashboard() {
                     return (
                       <tr key={cl.id}>
                         <td><span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.1rem', color: cl.rank && cl.rank <= 3 ? 'var(--accent)' : 'var(--text-secondary)' }}>#{cl.rank || '-'}</span></td>
-                        <td style={{ maxWidth: 260 }}>
-                          <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{(cl.representative_text || '').slice(0, 70)}...</div>
-                          {cl.score_explanation && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 3 }}>{cl.score_explanation.slice(0, 100)}...</div>}
+                        <td style={{ maxWidth: 300 }}>
+                          <div style={{ fontWeight: 600, fontSize: '0.88rem' }}><ExpandableText text={cl.representative_text} maxLen={80} /></div>
+                          {cl.score_explanation && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 3 }}><ExpandableText text={cl.score_explanation} maxLen={100} /></div>}
                         </td>
                         <td><span className="badge badge-accent" style={{ fontSize: '0.7rem' }}>{SECTOR_SHORT[cl.mplads_category_code] || cl.mplads_category_code}</span></td>
                         <td style={{ fontWeight: 600 }}>{cl.unique_users || 1}</td>
@@ -418,7 +434,7 @@ export default function MpDashboard() {
                 {d.decision === 'approved' ? <CheckCircle size={22} /> : <XCircle size={22} />}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, marginBottom: 2 }}>{d.representative_text?.slice(0, 80)}</div>
+                <div style={{ fontWeight: 600, marginBottom: 2 }}><ExpandableText text={d.representative_text} maxLen={80} /></div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{d.reason}</div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
                   {d.mplads_category_code && <span className="badge badge-accent" style={{ fontSize: '0.7rem' }}>{SECTOR_SHORT[d.mplads_category_code] || d.mplads_category_code}</span>}
@@ -438,6 +454,21 @@ export default function MpDashboard() {
           <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setViewCluster(null)}>
             <motion.div className="modal" style={{ maxWidth: 700, maxHeight: '85vh', overflow: 'auto' }} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()}>
               <h2 className="modal-title">Citizen Submissions ({viewCluster.submissions?.length || 0})</h2>
+              {/* Language Toggle */}
+              <div style={{ display: 'flex', gap: 4, marginBottom: 12, background: 'var(--bg-input)', padding: 3, borderRadius: 'var(--radius-sm)', width: 'fit-content' }}>
+                <button onClick={() => setViewLang('english')} style={{ padding: '6px 14px', borderRadius: 'calc(var(--radius-sm) - 1px)', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem',
+                  background: viewLang === 'english' ? 'var(--accent)' : 'transparent', color: viewLang === 'english' ? '#fff' : 'var(--text-secondary)', transition: 'all 0.2s' }}>
+                  🇬🇧 English
+                </button>
+                <button onClick={() => setViewLang('native')} style={{ padding: '6px 14px', borderRadius: 'calc(var(--radius-sm) - 1px)', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem',
+                  background: viewLang === 'native' ? 'var(--accent)' : 'transparent', color: viewLang === 'native' ? '#fff' : 'var(--text-secondary)', transition: 'all 0.2s' }}>
+                  🇮🇳 Native Language
+                </button>
+                <button onClick={() => setViewLang('both')} style={{ padding: '6px 14px', borderRadius: 'calc(var(--radius-sm) - 1px)', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem',
+                  background: viewLang === 'both' ? 'var(--accent)' : 'transparent', color: viewLang === 'both' ? '#fff' : 'var(--text-secondary)', transition: 'all 0.2s' }}>
+                  Both
+                </button>
+              </div>
               <p style={{ color: 'var(--text-secondary)', marginBottom: 16, fontSize: '0.9rem' }}>{viewCluster.representative_text}</p>
               {viewCluster.score && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 16, padding: 12, background: 'var(--bg-input)', borderRadius: 'var(--radius)' }}>
@@ -460,8 +491,25 @@ export default function MpDashboard() {
                     <span className="badge badge-neutral">{sub.sub_city || sub.sub_district}</span>
                     <span className="badge badge-neutral">PIN: {sub.submission_pin_code}</span>
                   </div>
-                  {sub.raw_text && <div style={{ marginBottom: 8 }}><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 2 }}><TextT size={12} /> Original ({sub.raw_language || 'en'}):</div><div style={{ fontSize: '0.9rem', padding: 8, background: 'var(--bg-card)', borderRadius: 6 }}>{sub.raw_text}</div></div>}
-                  {sub.translated_text_en && sub.translated_text_en !== sub.raw_text && <div style={{ marginBottom: 8 }}><div style={{ fontSize: '0.75rem', color: 'var(--success)', marginBottom: 2 }}>Translated (English):</div><div style={{ fontSize: '0.9rem', padding: 8, background: 'var(--success-bg)', borderRadius: 6, color: 'var(--text-primary)' }}>{sub.translated_text_en}</div></div>}
+                  {/* Text content — controlled by language toggle */}
+                  {(viewLang === 'native' || viewLang === 'both') && sub.raw_text && (
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--warning)', marginBottom: 2 }}><TextT size={12} /> Original ({sub.raw_language || 'native'}):</div>
+                      <div style={{ fontSize: '0.9rem', padding: 8, background: 'var(--bg-card)', borderRadius: 6 }}>{sub.raw_text}</div>
+                    </div>
+                  )}
+                  {(viewLang === 'native' || viewLang === 'both') && sub.original_text && sub.original_text !== sub.raw_text && (
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--warning)', marginBottom: 2 }}>📝 Extracted Text (Native):</div>
+                      <div style={{ fontSize: '0.9rem', padding: 8, background: 'var(--bg-card)', borderRadius: 6 }}>{sub.original_text}</div>
+                    </div>
+                  )}
+                  {(viewLang === 'english' || viewLang === 'both') && sub.translated_text_en && (
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--success)', marginBottom: 2 }}>🇬🇧 English Translation:</div>
+                      <div style={{ fontSize: '0.9rem', padding: 8, background: 'var(--success-bg)', borderRadius: 6, color: 'var(--text-primary)' }}>{sub.translated_text_en}</div>
+                    </div>
+                  )}
                   {sub.media?.map((m, mi) => (
                     <div key={mi} style={{ marginTop: 8 }}>
                       {m.media_type === 'audio' && <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 4 }}><Microphone size={12} /> Audio:</div><audio controls style={{ width: '100%', borderRadius: 8 }}><source src={`http://localhost:8000${m.file_url}`} type={m.mime_type} /></audio></div>}
@@ -482,7 +530,7 @@ export default function MpDashboard() {
           <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setModal(null)}>
             <motion.div className="modal" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={e => e.stopPropagation()}>
               <h2 className="modal-title">{modal.type === 'approve' ? '✅ Approve Issue' : '❌ Reject Issue'}</h2>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}><strong>#{modal.cluster.rank}:</strong> {modal.cluster.representative_text?.slice(0, 120)}</p>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}><strong>#{modal.cluster.rank}:</strong> <ExpandableText text={modal.cluster.representative_text} maxLen={120} /></p>
               {modal.type === 'approve' && <div className="form-group"><label className="form-label">Allocated Amount (₹)</label><input type="number" className="form-input" value={amount} onChange={e => setAmount(e.target.value)} /></div>}
               <div className="form-group"><label className="form-label">Reason * (min 10 characters)</label><textarea className="form-input" placeholder="Explain your decision..." value={reason} onChange={e => setReason(e.target.value)} rows={4} /></div>
               <div className="modal-actions">

@@ -23,8 +23,8 @@ export function AuthProvider({ children }) {
     return userData;
   };
 
-  const register = async ({ phone, password, name, home_pin_code }) => {
-    const data = await registerUser({ phone, password, name, home_pin_code });
+  const register = async ({ phone, password, name, home_pin_code, home_constituency }) => {
+    const data = await registerUser({ phone, password, name, home_pin_code, home_constituency });
     const userData = { ...data.user, token: data.access_token };
     setUser(userData);
     localStorage.setItem('pp_user', JSON.stringify(userData));

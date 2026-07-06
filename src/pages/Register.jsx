@@ -2,27 +2,39 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
-import { pinLookup } from '../api/client';
-import { Phone, Lock, MapPin, CheckCircle } from '@phosphor-icons/react';
+import { pinLookup, getConstituencies } from '../api/client';
+import { Phone, Lock, MapPin, CheckCircle, CaretDown } from '@phosphor-icons/react';
 
 export default function Register() {
   const { t } = useTranslation();
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ phone: '', name: '', pinCode: '', password: '', confirmPassword: '' });
+  const [form, setForm] = useState({ phone: '', name: '', pinCode: '', password: '', confirmPassword: '', constituency: '' });
   const [location, setLocation] = useState(null);
+  const [constituencies, setConstituencies] = useState([]);
   const [pinLoading, setPinLoading] = useState(false);
+  const [constLoading, setConstLoading] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handlePinChange = async (val) => {
-    setForm({ ...form, pinCode: val });
+    setForm({ ...form, pinCode: val, constituency: '' });
     setLocation(null);
+    setConstituencies([]);
     if (val.length === 6) {
       setPinLoading(true);
       try {
         const data = await pinLookup(val);
         setLocation(data);
+        // Fetch constituencies for the state
+        if (data.state) {
+          setConstLoading(true);
+          try {
+            const constList = await getConstituencies(data.state);
+            setConstituencies(constList);
+          } catch { setConstituencies([]); }
+          setConstLoading(false);
+        }
       } catch { setLocation(null); }
       setPinLoading(false);
     }
@@ -31,10 +43,11 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (form.password !== form.confirmPassword) { setError('Passwords do not match'); return; }
+    if (!form.constituency) { setError('Please select your MP constituency'); return; }
     setError('');
     setLoading(true);
     try {
-      await register({ phone: form.phone, password: form.password, name: form.name, home_pin_code: form.pinCode });
+      await register({ phone: form.phone, password: form.password, name: form.name, home_pin_code: form.pinCode, home_constituency: form.constituency });
       navigate('/dashboard');
     } catch (err) {
       setError(err.message);
@@ -77,7 +90,6 @@ export default function Register() {
                   { label: t('auth.city'), value: location.city },
                   { label: t('auth.district'), value: location.district },
                   { label: t('auth.state'), value: location.state },
-                  { label: t('auth.constituency'), value: location.mp_constituency },
                 ].map((f) => (
                   <div key={f.label} className="location-field">
                     <span className="location-field-label">{f.label}</span>
@@ -87,6 +99,31 @@ export default function Register() {
               </div>
             )}
           </div>
+
+          {/* Constituency Dropdown — shown after PIN fetches state */}
+          {location && (
+            <div className="form-group">
+              <label className="form-label"><CaretDown size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} /> {t('auth.constituency')} *</label>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 8 }}>
+                A single PIN code can span multiple constituencies. Please select your Lok Sabha (MP) constituency.
+              </p>
+              {constLoading ? (
+                <div className="form-hint">{t('common.loading')}</div>
+              ) : (
+                <select className="form-input" value={form.constituency} onChange={(e) => setForm({ ...form, constituency: e.target.value })} required
+                  style={{ cursor: 'pointer' }}>
+                  <option value="">— Select your MP Constituency —</option>
+                  {constituencies.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              )}
+              {form.constituency && (
+                <div className="form-hint" style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 6 }}>
+                  <CheckCircle size={14} weight="fill" /> Selected: {form.constituency}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="form-group">
             <label className="form-label"><Lock size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />{t('auth.password')}</label>
             <input type="password" className="form-input" placeholder={t('auth.password_placeholder')} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
@@ -95,7 +132,7 @@ export default function Register() {
             <label className="form-label">{t('auth.confirm_password')}</label>
             <input type="password" className="form-input" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} required />
           </div>
-          <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center' }} disabled={loading}>
+          <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center' }} disabled={loading || !form.constituency}>
             {loading ? t('common.loading') : t('auth.register_btn')}
           </button>
         </form>
