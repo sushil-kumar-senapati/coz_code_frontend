@@ -512,8 +512,8 @@ export default function MpDashboard() {
                   )}
                   {sub.media?.map((m, mi) => (
                     <div key={mi} style={{ marginTop: 8 }}>
-                      {m.media_type === 'audio' && <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 4 }}><Microphone size={12} /> Audio:</div><audio controls style={{ width: '100%', borderRadius: 8 }}><source src={`http://localhost:8000${m.file_url}`} type={m.mime_type} /></audio></div>}
-                      {m.media_type === 'image' && <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 4 }}><ImageIcon size={12} /> Image:</div><img src={`http://localhost:8000${m.file_url}`} alt="Submission" style={{ maxWidth: '100%', borderRadius: 8, border: '1px solid var(--border)' }} /></div>}
+                      {m.media_type === 'audio' && <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 4 }}><Microphone size={12} /> Audio:</div><audio controls style={{ width: '100%', borderRadius: 8 }}><source src={`${m.file_url}`} type={m.mime_type} /></audio></div>}
+                      {m.media_type === 'image' && <div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 4 }}><ImageIcon size={12} /> Image:</div><img src={`${m.file_url}`} alt="Submission" style={{ maxWidth: '100%', borderRadius: 8, border: '1px solid var(--border)' }} /></div>}
                     </div>
                   ))}
                 </div>
