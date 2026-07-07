@@ -1,14 +1,15 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { AuthProvider } from './contexts/AuthContext';
-import Navbar from './components/Navbar';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import SubmitIssue from './pages/SubmitIssue';
-import CitizenDashboard from './pages/CitizenDashboard';
-import MpDashboard from './pages/MpDashboard';
-import './i18n';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import { AuthProvider } from "./contexts/AuthContext";
+import Navbar from "./components/Navbar";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import SubmitIssue from "./pages/SubmitIssue";
+import CitizenDashboard from "./pages/CitizenDashboard";
+import MpDashboard from "./pages/MpDashboard";
+import Profile from "./pages/Profile";
+import "./i18n";
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
                 <Route path="/submit" element={<SubmitIssue />} />
                 <Route path="/dashboard" element={<CitizenDashboard />} />
                 <Route path="/mp-dashboard" element={<MpDashboard />} />
+                <Route path="/profile" element={<Profile />} />
               </Routes>
             </main>
           </div>
